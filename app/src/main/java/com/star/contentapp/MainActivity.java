@@ -3,11 +3,18 @@ package com.star.contentapp;
 import android.Manifest;
 import android.app.Activity;
 import android.app.AlertDialog;
+import android.content.ContentProviderOperation;
 import android.content.ContentResolver;
 import android.content.Context;
+import android.content.OperationApplicationException;
 import android.content.pm.PackageManager;
 import android.database.Cursor;
+import android.os.RemoteException;
+import android.provider.ContactsContract.RawContacts;
+import android.provider.ContactsContract.Data;
 import android.provider.ContactsContract;
+import android.provider.ContactsContract.CommonDataKinds.StructuredName;
+import android.provider.ContactsContract.*;
 import android.provider.ContactsContract.Contacts;
 import android.provider.ContactsContract.CommonDataKinds.Phone;
 import android.support.annotation.NonNull;
@@ -19,6 +26,8 @@ import android.view.View;
 import android.widget.ListView;
 import android.widget.SimpleCursorAdapter;
 import android.widget.TextView;
+
+import java.util.ArrayList;
 
 import static android.Manifest.permission.*;
 
@@ -40,6 +49,9 @@ public class MainActivity extends AppCompatActivity {
         else {
             readContacts();
         }
+//        insertContact();
+//        updateContact();
+        deleteContact();
     }
 
     @Override
@@ -101,6 +113,66 @@ public class MainActivity extends AppCompatActivity {
             }
         };
         list.setAdapter(adapter);
+
         Log.d("RECORD", list + "/" + adapter);
+    }
+
+    private void insertContact()
+    {
+        ArrayList ops = new ArrayList();
+        int index = ops.size();
+        ops.add(ContentProviderOperation.newInsert(RawContacts.CONTENT_URI)
+                .withValue(RawContacts.ACCOUNT_TYPE , null)
+                .withValue(RawContacts.ACCOUNT_NAME , null).build());
+        ops.add(ContentProviderOperation.newInsert(Data.CONTENT_URI)
+        .withValueBackReference(Data.RAW_CONTACT_ID , index)
+        .withValue(Data.MIMETYPE , StructuredName.CONTENT_ITEM_TYPE)
+        .withValue(StructuredName.DISPLAY_NAME , "Jane").build());
+        ops.add(ContentProviderOperation.newInsert(Data.CONTENT_URI)
+        .withValueBackReference(Data.RAW_CONTACT_ID ,index)
+        .withValue(Data.MIMETYPE , Phone.CONTENT_ITEM_TYPE)
+        .withValue(Phone.NUMBER , "0900112233")
+        .withValue(Phone.TYPE ,Phone.TYPE_MOBILE).build());
+        try {
+            getContentResolver().applyBatch(ContactsContract.AUTHORITY , ops);
+        } catch (RemoteException e) {
+            e.printStackTrace();
+        } catch (OperationApplicationException e) {
+            e.printStackTrace();
+        }
+    }
+
+    private void updateContact() {
+        String where = Phone.DISPLAY_NAME + " = ? AND " + Data.MIMETYPE + " = ? ";
+        String[] params = new String[] {"Jane" , Phone.CONTENT_ITEM_TYPE};
+        ArrayList ops = new ArrayList();
+        ops.add(ContentProviderOperation.newUpdate(Data.CONTENT_URI)
+        .withSelection(where , params)
+        .withValue(Phone.NUMBER , "0900333333")
+        .build());
+        try {
+            getContentResolver().applyBatch(ContactsContract.AUTHORITY , ops);
+        } catch (RemoteException e) {
+            e.printStackTrace();
+        } catch (OperationApplicationException e) {
+            e.printStackTrace();
+        }
+    }
+
+    private  void deleteContact()
+    {
+        String where = ContactsContract.Data.DISPLAY_NAME + " = ? " ;
+        String[] params = new String[] {"Jane" };
+        ArrayList ops = new ArrayList();
+        ops.add(ContentProviderOperation.newDelete(RawContacts.CONTENT_URI)
+        .withSelection(where , params)
+        .build());
+        try {
+            getContentResolver().applyBatch(ContactsContract.AUTHORITY , ops);
+        } catch (RemoteException e) {
+            e.printStackTrace();
+        } catch (OperationApplicationException e) {
+            e.printStackTrace();
+        }
     }
 }
