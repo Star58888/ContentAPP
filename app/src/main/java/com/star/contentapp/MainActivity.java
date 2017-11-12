@@ -49,9 +49,9 @@ public class MainActivity extends AppCompatActivity {
         else {
             readContacts();
         }
-//        insertContact();
-//        updateContact();
-        deleteContact();
+//        insertContact();   // 新增聯絡人
+//        updateContact();  //更新聯絡人
+        deleteContact();    //刪除聯絡人
     }
 
     @Override
